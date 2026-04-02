@@ -255,53 +255,20 @@ export function OutboundOrderList({ onSelectOutbound }: OutboundOrderListProps) 
   }
 
   const handleExcelDownload = () => {
-    const rows: Record<string, string | number>[] = []
+    const rows: Record<string, string>[] = []
 
     sortedRecords.forEach((record) => {
-      const detail = outboundDetails[record.id]
-      if (detail) {
-        detail.orders.forEach((order) => {
-          order.items.forEach((item) => {
-            rows.push({
-              "Registration Date": record.registrationDate,
-              "Status": record.outboundStatus,
-              "Type": record.type,
-              "IV No.": record.uvNo,
-              "From Store": `${record.fromStoreCode} / ${record.fromStoreName}`,
-              "From Location": `${record.fromLocationCode} / ${record.fromLocationName}`,
-              "To Store": `${record.toStoreCode} / ${record.toStoreName}`,
-              "To Location": `${record.toLocationCode} / ${record.toLocationName}`,
-              "Created By": record.createdBy,
-              "Order #": order.orderNo,
-              "Order Date": order.orderDate,
-              "Product Code": item.itemCode,
-              "Product Name": item.itemName,
-              "Category": item.category || "",
-              "Subcategory": item.subcategory || "",
-              "Qty": item.quantity,
-            })
-          })
-        })
-      } else {
-        rows.push({
-          "Registration Date": record.registrationDate,
-          "Status": record.outboundStatus,
-          "Type": record.type,
-          "IV No.": record.uvNo,
-          "From Store": `${record.fromStoreCode} / ${record.fromStoreName}`,
-          "From Location": `${record.fromLocationCode} / ${record.fromLocationName}`,
-          "To Store": `${record.toStoreCode} / ${record.toStoreName}`,
-          "To Location": `${record.toLocationCode} / ${record.toLocationName}`,
-          "Created By": record.createdBy,
-          "Order #": "",
-          "Order Date": "",
-          "Product Code": "",
-          "Product Name": "",
-          "Category": "",
-          "Subcategory": "",
-          "Qty": 0,
-        })
-      }
+      rows.push({
+        "Created Date\n등록일": record.registrationDate,
+        "Outbound Status\n출고 상태": record.outboundStatus,
+        "Outbound Type\n출고 Type": record.type,
+        "I/V No.\nI/V No.": record.uvNo,
+        "From Store\n출고 스토어": `${record.fromStoreCode} / ${record.fromStoreName}`,
+        "From Location\n출고 로케이션": `${record.fromLocationCode} / ${record.fromLocationName}`,
+        "To Store\n입고 스토어": `${record.toStoreCode} / ${record.toStoreName}`,
+        "To Location\n입고 로케이션": `${record.toLocationCode} / ${record.toLocationName}`,
+        "Created By\n생성 계정": record.createdBy,
+      })
     })
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -376,17 +343,6 @@ export function OutboundOrderList({ onSelectOutbound }: OutboundOrderListProps) 
             />
           </div>
 
-          {/* Type - Multi Select */}
-          <div className="w-[160px]">
-            <MultiSelectPopover
-              label="Type"
-              options={TYPE_OPTIONS}
-              selected={selectedTypes}
-              onToggle={(v) => setSelectedTypes(toggleInList(selectedTypes, v))}
-              onToggleAll={() => setSelectedTypes(toggleAll(selectedTypes, TYPE_OPTIONS))}
-            />
-          </div>
-
           {/* Outbound Status - Multi Select */}
           <div className="w-[160px]">
             <MultiSelectPopover
@@ -398,9 +354,9 @@ export function OutboundOrderList({ onSelectOutbound }: OutboundOrderListProps) 
             />
           </div>
 
-          {/* Order Tag */}
+          {/* Outbound Tag */}
           <div className="w-[160px]">
-            <label className="block text-[10px] font-medium text-foreground mb-1.5">Order Tag</label>
+            <label className="block text-[10px] font-medium text-foreground mb-1.5">Outbound Tag</label>
             <Select defaultValue="all">
               <SelectTrigger className="w-full bg-background border-border !h-8 text-[10px]">
                 <SelectValue placeholder="All" />
@@ -412,11 +368,22 @@ export function OutboundOrderList({ onSelectOutbound }: OutboundOrderListProps) 
               </SelectContent>
             </Select>
           </div>
+
+          {/* Type - Multi Select */}
+          <div className="w-[160px]">
+            <MultiSelectPopover
+              label="Type"
+              options={TYPE_OPTIONS}
+              selected={selectedTypes}
+              onToggle={(v) => setSelectedTypes(toggleInList(selectedTypes, v))}
+              onToggleAll={() => setSelectedTypes(toggleAll(selectedTypes, TYPE_OPTIONS))}
+            />
+          </div>
         </div>
 
         {/* Row 2 - Date Range */}
         <div className="mb-4">
-          <label className="block text-[10px] font-medium text-foreground mb-1.5">Registration Date</label>
+          <label className="block text-[10px] font-medium text-foreground mb-1.5">Create Date</label>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
@@ -465,7 +432,7 @@ export function OutboundOrderList({ onSelectOutbound }: OutboundOrderListProps) 
         <div className="flex items-end justify-between gap-3">
           <div className="flex-1">
             <label className="block text-[10px] text-muted-foreground mb-1">
-              Store Code, Store Name, IV No., Request Account
+              Store Code, Store Name, IV No.
             </label>
             <Input
               placeholder="Enter at least 2 characters"
@@ -511,12 +478,12 @@ export function OutboundOrderList({ onSelectOutbound }: OutboundOrderListProps) 
                   onClick={() => handleSort("registrationDate")}
                   className="flex items-center justify-center w-full hover:text-primary transition-colors"
                 >
-                  Registration Date
+                  Create Date
                   {getSortIcon("registrationDate")}
                 </button>
               </TableHead>
               <TableHead className="text-center">Status</TableHead>
-              <TableHead className="text-center">Order Tag</TableHead>
+              <TableHead className="text-center">Outbound Tag</TableHead>
               <TableHead className="text-center">Type</TableHead>
               <TableHead className="text-center">IV No.</TableHead>
               <TableHead className="text-center">Order</TableHead>

@@ -327,7 +327,7 @@ interface OutboundRegistrationModalProps {
 }
 
 export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegistrationModalProps) {
-  const [activeTab, setActiveTab] = useState<"rx" | "preorder">("rx")
+  const [activeTab, setActiveTab] = useState<"rx" | "preorder">("preorder")
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [rowsPerPage, setRowsPerPage] = useState(30)
   const [currentPage, setCurrentPage] = useState(1)
@@ -356,24 +356,21 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
     setSearchQuery("")
   }
 
-  // Get the locked store from the first selected item
-  const selectedStore = selectedItems.length > 0
-    ? filteredOrders.find((o) => o.id === selectedItems[0])?.storeCode ?? null
+  // Get the locked country (BP) from the first selected item
+  const getCountryCode = (storeCode: string) => storeCode.replace(/[0-9]/g, "")
+  const selectedCountry = selectedItems.length > 0
+    ? (() => { const order = filteredOrders.find((o) => o.id === selectedItems[0]); return order ? getCountryCode(order.storeCode) : null })()
     : null
 
   const isOrderDisabled = (order: RegistrationOrder) => {
-    if (!selectedStore) return false
-    return order.storeCode !== selectedStore
+    if (!selectedCountry) return false
+    return getCountryCode(order.storeCode) !== selectedCountry
   }
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const selectableOrders = selectedStore
-        ? paginatedOrders.filter((o) => o.storeCode === selectedStore)
-        : paginatedOrders
-      // If no store locked yet, lock to the first order's store
-      const targetStore = selectedStore || paginatedOrders[0]?.storeCode
-      setSelectedItems(paginatedOrders.filter((o) => o.storeCode === targetStore).map((o) => o.id))
+      const targetCountry = selectedCountry || getCountryCode(paginatedOrders[0]?.storeCode)
+      setSelectedItems(paginatedOrders.filter((o) => getCountryCode(o.storeCode) === targetCountry).map((o) => o.id))
     } else {
       setSelectedItems([])
     }
@@ -409,17 +406,6 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
                 Pre-Order
-              </button>
-              <button
-                onClick={() => handleTabChange("rx")}
-                className={`pb-3 px-4 text-xs font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
-                  activeTab === "rx"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                RX (LMS)
               </button>
             </div>
           </div>
@@ -504,6 +490,18 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
                     className="w-[110px] pl-6 !h-6 bg-background border-border !text-[9px] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:text-[9px]"
                   />
                 </div>
+                <Select defaultValue="00">
+                  <SelectTrigger className="w-[60px] !h-6 text-[9px] bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i).padStart(2, "0")} className="text-[9px]">
+                        {String(i).padStart(2, "0")}:00
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <span className="text-[9px] text-muted-foreground">~</span>
                 <div className="relative">
                   <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none z-10" />
@@ -513,6 +511,18 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
                     className="w-[110px] pl-6 !h-6 bg-background border-border !text-[9px] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:text-[9px]"
                   />
                 </div>
+                <Select defaultValue="23">
+                  <SelectTrigger className="w-[60px] !h-6 text-[9px] bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i).padStart(2, "0")} className="text-[9px]">
+                        {String(i).padStart(2, "0")}:00
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
@@ -535,6 +545,12 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
             )}
           </div>
 
+          {/* Notice */}
+          <div className="mx-5 mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-[10px] text-amber-800 flex flex-col gap-1">
+            <span>⭐️ Outbound registration is available only for orders within the same BP (Business Partner).</span>
+            <span>⭐️ Even if multiple stores are selected, outbound orders will be created per store.</span>
+          </div>
+
           {/* Column Header */}
           <div className="flex items-center gap-2.5 mx-5 px-2 py-2 mt-4 bg-muted/50 rounded-md text-[10px] font-medium text-muted-foreground">
             <Checkbox
@@ -542,13 +558,13 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
               onCheckedChange={handleSelectAll}
               className="h-3.5 w-3.5 shrink-0"
             />
-            <span className="w-[70px]">Order Date</span>
+            <span className="w-[120px] text-center">Order Date</span>
             {activeTab === "preorder" && <>
               <span className="w-[75px] text-center">Launch Date</span>
               <span className="w-[75px] text-center">Ship Date</span>
               <span className="w-[75px] text-center">Pickup Date</span>
             </>}
-            <span className="w-[65px]">Type</span>
+            <span className="w-[80px] text-center">Order Tag</span>
             <span className="w-[180px]">Order #</span>
             <span className="flex-1 inline-flex items-center gap-1">
               Store Info
@@ -564,8 +580,6 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
               </TooltipProvider>
             </span>
             {activeTab === "rx" && <span className="w-[120px] text-center">Work Status</span>}
-            <span className="w-[50px] text-center">SKU</span>
-            <span className="w-[50px] text-center">Total Qty</span>
           </div>
 
           {/* Order List */}
@@ -589,13 +603,13 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
                     disabled={isOrderDisabled(order)}
                     className="h-3.5 w-3.5"
                   />
-                  <span className="text-[10px] text-muted-foreground w-[70px]">{order.orderDate}</span>
+                  <span className="text-[9px] text-muted-foreground w-[120px] text-center whitespace-nowrap">{order.orderDate} {String((order.id.charCodeAt(1) * 7 + order.id.charCodeAt(0) * 3) % 24).padStart(2, "0")}:{String((order.id.charCodeAt(1) * 13 + order.id.charCodeAt(0) * 11) % 60).padStart(2, "0")} (EST)</span>
                   {activeTab === "preorder" && <>
                     <span className="text-[10px] text-blue-600 font-medium w-[75px] text-center">{order.launchDate}</span>
                     <span className="text-[10px] text-blue-600 font-medium w-[75px] text-center">{order.estimatedShipDate}</span>
                     <span className="text-[10px] text-muted-foreground w-[75px] text-center">{order.pickupDate}</span>
                   </>}
-                  <span className="w-[65px]">
+                  <span className="w-[80px] text-center">
                     <span className={`text-[9px] font-medium whitespace-nowrap px-2 py-0.5 rounded text-center inline-block ${
                       order.orderType === "Pre-Order"
                         ? "bg-[oklch(0.93_0.04_280)] text-[oklch(0.45_0.08_275)]"
@@ -612,22 +626,6 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
                       "bg-[oklch(0.93_0.04_160)] text-[oklch(0.40_0.07_155)]"
                     }`}>{order.workStatus}</span>
                   )}
-                  <span className="text-[10px] text-muted-foreground w-[50px] text-center">{order.items.length}</span>
-                  <span className="text-[10px] font-medium w-[50px] text-center">{order.items.reduce((s, i) => s + i.quantity, 0)}</span>
-                </div>
-                {/* Items */}
-                <div className="pl-9 pr-2 pb-4 flex flex-col gap-0.5">
-                  <div className="bg-muted/50 rounded px-2 py-0.5 mb-0.5 -ml-2 mr-[-8px]">
-                    <span className="text-[10px] font-medium text-muted-foreground">Product Info (Code / Name) · Qty</span>
-                  </div>
-                  {order.items.map((item, idx) => (
-                    <span key={idx} className="text-[9px] text-muted-foreground inline-flex items-center gap-1">
-                      {item.itemCode} / {item.itemName}
-                      <span className="inline-flex items-center justify-center bg-muted rounded px-1 py-0.5 text-[8px] font-medium text-foreground min-w-[16px]">
-                        {item.quantity}
-                      </span>
-                    </span>
-                  ))}
                 </div>
               </div>
             ))}
@@ -642,9 +640,12 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="10" className="text-[10px]">10</SelectItem>
                   <SelectItem value="30" className="text-[10px]">30</SelectItem>
                   <SelectItem value="50" className="text-[10px]">50</SelectItem>
+                  <SelectItem value="100" className="text-[10px]">100</SelectItem>
+                  <SelectItem value="300" className="text-[10px]">300</SelectItem>
+                  <SelectItem value="500" className="text-[10px]">500</SelectItem>
+                  <SelectItem value="1000" className="text-[10px]">1000</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -668,7 +669,7 @@ export function OutboundRegistrationModal({ open, onOpenChange }: OutboundRegist
             className="h-7 text-[10px] px-4 bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={selectedItems.length === 0}
           >
-            Register ({selectedItems.length})
+            Register
           </Button>
         </div>
       </DialogContent>

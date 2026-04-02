@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, Package, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react"
+import * as XLSX from "xlsx"
+import { ArrowLeft, Package, ClipboardList, ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -56,6 +57,29 @@ export function OutboundOrderDetail({ outboundId, onBack }: OutboundOrderDetailP
     }))
   )
 
+  const handleExcelDownload = () => {
+    const rows = allRows.map((row) => ({
+      "I/V No.": outbound.uvNo,
+      "Outbound Status": outbound.outboundStatus,
+      "Create Date": outbound.registrationDate,
+      "From Store": `${outbound.fromStoreCode} / ${outbound.fromStoreName}`,
+      "From Location": `${outbound.fromLocationCode} / ${outbound.fromLocationName}`,
+      "To Store": `${outbound.toStoreCode} / ${outbound.toStoreName}`,
+      "To Location": `${outbound.toLocationCode} / ${outbound.toLocationName}`,
+      "Order #": row.orderNo,
+      "Product Code": row.itemCode,
+      "Product Name": row.itemName,
+      "Product Category": row.category,
+      "Product Subcategory": row.subcategory,
+      "Outbound Qty (Registered)": row.quantity,
+      "Outbound Qty (Completed)": outbound.outboundStatus === "Outbound Completed" ? row.quantity : "-",
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Order List")
+    XLSX.writeFile(wb, `${outbound.uvNo}_order_list_${new Date().toISOString().split("T")[0]}.xlsx`)
+  }
+
   const totalRows = allRows.length
   const totalPages = Math.ceil(totalRows / rowsPerPage)
   const startIdx = (currentPage - 1) * rowsPerPage
@@ -95,7 +119,7 @@ export function OutboundOrderDetail({ outboundId, onBack }: OutboundOrderDetailP
 
         <div className="grid grid-cols-4 gap-3 mb-3">
           <div>
-            <p className="text-[9px] text-muted-foreground">Registration Date</p>
+            <p className="text-[9px] text-muted-foreground">Create Date</p>
             <p className="mt-0.5 text-[10px] font-medium">{outbound.registrationDate}</p>
           </div>
         </div>
@@ -125,8 +149,14 @@ export function OutboundOrderDetail({ outboundId, onBack }: OutboundOrderDetailP
           <div className="flex items-center gap-1.5">
             <ClipboardList className="h-3 w-3 text-primary" />
             <h2 className="text-[10px] font-semibold">Order List</h2>
+            <Badge className="text-[9px] bg-teal-100 text-teal-700 hover:bg-teal-100">{orders.length} orders</Badge>
           </div>
-          <Badge variant="secondary" className="text-[9px]">{orders.length} orders</Badge>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-1.5 border-border bg-background hover:bg-muted h-6 text-[9px] px-2" onClick={handleExcelDownload}>
+              <Download className="h-3 w-3" />
+              Download
+            </Button>
+          </div>
         </div>
 
         <Table>
